@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os  # comando para leer al sistema operativo
+import dj_database_url  # importamos el administrador de db
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,13 +22,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#=t0dbpc&ax3h%k!kw_#7gt$0*6qf&a=rv_9r0c(ti7_5hq81i'
+# SECRET_KEY = 'django-insecure-#=t0dbpc&ax3h%k!kw_#7gt$0*6qf&a=rv_9r0c(ti7_5hq81i'
+# declamramos una llave generada en la nube
+SECRET_KEY = os.environ.get('SECRET_KEY', default='your secret key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
+# condicion para saber si estamos en produccion
+DEBUG = 'RENDER' not in os.environ
 
-ALLOWED_HOSTS = ["*"]
 
+# ALLOWED_HOSTS = ["*"]
+
+# https://docs.djangoproject.com/en/3.0/ref/settings/#allowed-hosts
+ALLOWED_HOSTS = []
+
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:  # definimos condicionante para saber si estamos en local o en produccion
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Application definition
 
@@ -37,15 +50,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'corsheaders', #modulo para poder comunicar los servidores en produccion
-    'rest_framework', #agregamos el modulo "django restframework"
-    'coreapi', #modulo para documentar nuestra API
-    'tasks', #agregamos la aplicacion que recien hemos creado
+    'corsheaders',  # modulo para poder comunicar los servidores en produccion
+    'rest_framework',  # agregamos el modulo "django restframework"
+    'coreapi',  # modulo para documentar nuestra API
+    'tasks',  # agregamos la aplicacion que recien hemos creado
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware', #agregamos un middlewere para la respuesta y debe estar antes de "common"
+    'whitenoise.middleware.WhiteNoiseMiddleware', #libreria para leer archivos estaticos.
+    # agregamos un middlewere para la respuesta y debe estar antes de "common"
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -76,30 +91,14 @@ WSGI_APPLICATION = 'django_crud_api.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
-#mysql://root:G2Eg6b4heeaE-CBbCBCacAeEcBD3f15e@roundhouse.proxy.rlwy.net:32959/railway
-
+# https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+        'default': dj_database_url.config( #aqui leera la direccion que le otorge "RENDER"
+            default='sqlite:///db.sqlite3',   #agregamos por defecto a "db.sqlite3"
+            conn_max_age=600   
+        )
 }
-
-""" DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'railway',
-        'USER' : 'root',
-        'PASSWORD': 'G2Eg6b4heeaE-CBbCBCacAeEcBD3f15e',
-        'HOST':'roundhouse.proxy.rlwy.net',
-        'PORT':'32959',
-    }
-} """
-
-
 
 
 # Password validation
@@ -137,16 +136,26 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+if not DEBUG:    # Tell Django to copy statics to the `staticfiles` directory
+    # in your application directory on Render.
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    # Turn on WhiteNoise storage backend that takes care of compressing static files
+    # and creating unique names for each version so they can safely be cached forever.
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+
+
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-#cors autoritation  
-CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]
+# cors autoritation
+CORS_ALLOWED_ORIGINS = ["http://localhost:5173",]
 
-#configuracion para crear una autodocumentacion de nuestra API
+# configuracion para crear una autodocumentacion de nuestra API
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
 }
