@@ -153,7 +153,7 @@ if not DEBUG:    # Tell Django to copy statics to the `staticfiles` directory
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # cors autoritation
-CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "https://taskapp-hz1i.onrender.com"]
+CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "https://taskapp-hz1i.onrender.com/tasks"]
 
 # configuracion para crear una autodocumentacion de nuestra API
 REST_FRAMEWORK = {
